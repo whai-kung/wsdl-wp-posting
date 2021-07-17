@@ -4,7 +4,7 @@
 Plugin Name: BlogDrip Web Service
 Plugin URI: https://bremic.co.th
 Description: WordPress Web Service is used to access WordPress resources via WSDL and SOAP. After installation simply open http://yoursite.com/blog/index.php/sbws to test your plugin.
-Version: 1.0
+Version: 1.1
 Author: BREMIC Digital Services
 Author URI: https://bremic.co.th
 */
@@ -40,6 +40,9 @@ Add feature to put yoast seo detail
 
 version: 1.0
 Add feature auto update plugin
+
+version: 1.1
+Delete the duplicate file
 */
 
 /**
