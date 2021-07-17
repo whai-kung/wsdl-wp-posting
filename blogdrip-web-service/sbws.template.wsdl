@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:apachesoap="http://xml.apache.org/xml-soap"
+	xmlns:impl="http://sbws.developertool.net" xmlns:model="http://model.sbws.developertool.net"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ns="http://schemas.xmlsoap.org/soap/encoding/"
+	targetNamespace="http://sbws.developertool.net" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+	xmlns:http="http://schemas.xmlsoap.org/wsdl/http/">
+	<wsdl:types>
+		<schema elementFormDefault="qualified" targetNamespace="http://model.sbws.developertool.net"
+			xmlns="http://www.w3.org/2001/XMLSchema">
+			<import namespace="http://sbws.developertool.net" />
+			<complexType name="Post">
+				<sequence>
+					<element name="id" type="xsd:int" />
+					<element name="date" nillable="true" type="xsd:dateTime" />
+					<element name="dateGmt" nillable="true" type="xsd:dateTime" />
+					<element name="content" nillable="true" type="xsd:string" />
+          <element name="title" nillable="true" type="xsd:string" />
+          <element name="tags" nillable="true" type="xsd:string" />
+					<element name="postStatus" nillable="true" type="xsd:string" />
+					<element name="featureImage" nillable="true" type="xsd:string" />
+          <element name="categories" nillable="true" type="xsd:string" />
+					<element name="yoastTitle" nillable="true" type="xsd:string" />
+					<element name="yoastDesc" nillable="true" type="xsd:string" />
+					<element name="yoastFBTitle" nillable="true" type="xsd:string" />
+					<element name="yoastFBDesc" nillable="true" type="xsd:string" />
+					<element name="yoastTWTitle" nillable="true" type="xsd:string" />
+					<element name="yoastTWDesc" nillable="true" type="xsd:string" />
+        </sequence>
+			</complexType>
+		</schema>
+	</wsdl:types>
+	<wsdl:message name="insertPostRequest">
+		<wsdl:part name="token" type="xsd:string" />
+		<wsdl:part name="newPost" type="model:Post" />
+	</wsdl:message>
+	<wsdl:message name="insertPostResponse">
+		<wsdl:part name="postId" type="xsd:int" />
+	</wsdl:message>
+	<wsdl:message name="deletePostRequest">
+		<wsdl:part name="token" type="xsd:string" />
+		<wsdl:part name="postId" type="xsd:int" />
+	</wsdl:message>
+	<wsdl:message name="deletePostResponse">
+		<wsdl:part name="success" type="xsd:boolean" />
+	</wsdl:message>
+	<wsdl:portType name="WordPressWebServicePortType">
+		<wsdl:operation name="insertPost">
+			<wsdl:input name="insertPostRequest" message="impl:insertPostRequest" />
+			<wsdl:output name="insertPostResponse" message="impl:insertPostResponse" />
+		</wsdl:operation>
+		<wsdl:operation name="deletePost">
+			<wsdl:input name="deletePostRequest" message="impl:deletePostRequest" />
+			<wsdl:output name="deletePostResponse" message="impl:deletePostResponse" />
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="WordPressWebServiceSoapBinding" type="impl:WordPressWebServicePortType">
+		<wsdlsoap:binding style="rpc"
+			transport="http://schemas.xmlsoap.org/soap/http" />
+		<wsdl:operation name="insertPost">
+			<wsdlsoap:operation soapAction="http://sbws.developertool.net/insertPost" />
+			<wsdl:input name="insertPostRequest">
+				<wsdlsoap:body use="literal" namespace="http://sbws.developertool.net" />
+			</wsdl:input>
+			<wsdl:output name="insertPostResponse">
+				<wsdlsoap:body use="literal" namespace="http://sbws.developertool.net" />
+			</wsdl:output>
+		</wsdl:operation>
+		<wsdl:operation name="deletePost">
+			<wsdlsoap:operation soapAction="http://sbws.developertool.net/deletePost" />
+			<wsdl:input name="deletePostRequest">
+				<wsdlsoap:body use="literal" namespace="http://sbws.developertool.net" />
+			</wsdl:input>
+			<wsdl:output name="deletePostResponse">
+				<wsdlsoap:body use="literal" namespace="http://sbws.developertool.net" />
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="WordPressWebService">
+		<wsdl:port name="WordPressWebServiceHttpSoapEndpoint"
+			binding="impl:WordPressWebServiceSoapBinding">
+			<wsdlsoap:address location="%{BLOG_URL}/index.php?/sbws" />
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>
