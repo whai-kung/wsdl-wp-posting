@@ -1,5 +1,5 @@
 <?php
-define("SBWS_TOKEN", "00000000-0000-0000-0000-000000000000");
+require_once(dirname(__FILE__) . "/sbws-config.php");
 
 define("SBWS_PLUGIN_NAME", "blogdrip-web-service");
 define("SBWS_ENTRY_FILE", dirname(__FILE__) . "/../" . SBWS_PLUGIN_NAME . ".php");
@@ -13,8 +13,6 @@ define("SBWS_SOAP_SERVER_CLASS", "sb_WebService");
 define("SBWS_BLOG_URL", "%{BLOG_URL}");
 define("SBWS_CACHE_DIR", dirname(__FILE__) . "/../cache");
 define("SB_UPLOAD_DIR", "/wp-content/uploads");
-
-
 
 function sbws_getVersion() {
 	$entry_file = file_get_contents(SBWS_ENTRY_FILE);
