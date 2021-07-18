@@ -61,7 +61,7 @@ require_once(dirname(__FILE__) . "/includes/sbws-access.php");
  * Add left menu to set credential
  */
 
-function settings_page_render_settings_field($args) {
+function blogdrip_settings_page_render_settings_field($args) {
 	if($args['wp_data'] == 'option'){
 		$wp_data_value = get_option($args['name']);
 	} elseif($args['wp_data'] == 'post_meta'){
@@ -96,7 +96,7 @@ function settings_page_render_settings_field($args) {
 	}
 }
 
-function register_settings($wp) {	
+function blogdrip_register_settings($wp) {	
 	unset($args);
 	$args = array (
 						'type'      => 'input',
@@ -112,17 +112,54 @@ function register_settings($wp) {
 	add_settings_field(
 		'sbws_token',
 		'SBWS TOKEN',
-		'settings_page_render_settings_field',
+		'blogdrip_settings_page_render_settings_field',
 		'blogdrip',
 		$args
 	);
 }
 
+function settings_page() {
+	if (!current_user_can('activate_plugins')) return;
+	?>
+	<div class="wrap">
+		<div id="icon-themes" class="icon32"></div>  
+		<h2>Settings Credential for Blogdrip</h2>  
+		<!--NEED THE settings_errors below so that the errors/success messages are shown after submission - wasn't working once we started using add_menu_page and stopped using add_options_page so needed this-->
+		<?php settings_errors(); ?>  
+		<form method="POST" action="options.php">
+				
+				<?php submit_button(); ?>  
+		</form> 
+	</div>
+	<?php
+}
+
+function add_settings_menu_page() {
+	if (!current_user_can('activate_plugins')) return;
+
+	global $rsssl_admin_page;
+
+	$rsssl_admin_page = add_options_page(
+		'blogdrip settings', //link title
+		'blogdrip', //page title
+		'activate_plugins', //capability
+		'blogdrip_plugin', //url
+		'settings_page'); //function
+}
+
+// function blogdrip_is_settings_page() {
+// 	if (!isset($_SERVER['QUERY_STRING'])) return false;
+
+// 	parse_str($_SERVER['QUERY_STRING'], $params);
+// 	if (array_key_exists("page", $params) && ($params["page"] == "blogdrip_plugin")) {
+// 			return true;
+// 	}
+// 	return false;
+// }
+
 function add_settings_link($links, $file) {
-	if ( current_filter() === 'plugin_action_links' ) {
+	if ( current_filter() === 'plugin_action_links_'.plugin_basename(__FILE__) ) {
 		$url = admin_url( 'options-general.php?page=blogdrip_plugin' );
-	} else {
-		$url = admin_url( '/network/settings.php?page=blogdrip_plugin' );
 	}
 
 	// Prevent warnings in PHP 7.0+ when a plugin uses this filter incorrectly.
@@ -132,10 +169,11 @@ function add_settings_link($links, $file) {
 	return $links;
 }
 
-add_filter( 'plugin_action_links', 'add_settings_link', 50, 2 );
+add_filter( 'plugin_action_links_'.plugin_basename(__FILE__), 'add_settings_link', 50, 2 );
 add_filter( 'network_admin_plugin_action_links','add_settings_link', 50, 2 );
 
-add_action( 'admin_init','register_settings' );
+add_action('admin_menu', 'add_settings_menu_page', 50);
+// add_action( 'admin_init', 'blogdrip_register_settings' );
 
 /*
  * quick and dirty debug
