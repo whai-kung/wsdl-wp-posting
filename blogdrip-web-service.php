@@ -57,6 +57,86 @@ $myUpdateChecker = Puc_v4_Factory::buildUpdateChecker(
 
 require_once(dirname(__FILE__) . "/includes/sbws-access.php");
 
+/**
+ * Add left menu to set credential
+ */
+
+function settings_page_render_settings_field($args) {
+	if($args['wp_data'] == 'option'){
+		$wp_data_value = get_option($args['name']);
+	} elseif($args['wp_data'] == 'post_meta'){
+		$wp_data_value = get_post_meta($args['post_id'], $args['name'], true );
+	}
+
+	switch ($args['type']) {
+		case 'input':
+			$value = ($args['value_type'] == 'serialized') ? serialize($wp_data_value) : $wp_data_value;
+			if($args['subtype'] != 'checkbox'){
+					$prependStart = (isset($args['prepend_value'])) ? '<div class="input-prepend"> <span class="add-on">'.$args['prepend_value'].'</span>' : '';
+					$prependEnd = (isset($args['prepend_value'])) ? '</div>' : '';
+					$step = (isset($args['step'])) ? 'step="'.$args['step'].'"' : '';
+					$min = (isset($args['min'])) ? 'min="'.$args['min'].'"' : '';
+					$max = (isset($args['max'])) ? 'max="'.$args['max'].'"' : '';
+					if(isset($args['disabled'])){
+							// hide the actual input bc if it was just a disabled input the info saved in the database would be wrong - bc it would pass empty values and wipe the actual information
+							echo $prependStart.'<input type="'.$args['subtype'].'" id="'.$args['id'].'_disabled" '.$step.' '.$max.' '.$min.' name="'.$args['name'].'_disabled" size="40" disabled value="' . esc_attr($value) . '" /><input type="hidden" id="'.$args['id'].'" '.$step.' '.$max.' '.$min.' name="'.$args['name'].'" size="40" value="' . esc_attr($value) . '" />'.$prependEnd;
+					} else {
+							echo $prependStart.'<input type="'.$args['subtype'].'" id="'.$args['id'].'" "'.$args['required'].'" '.$step.' '.$max.' '.$min.' name="'.$args['name'].'" size="40" value="' . esc_attr($value) . '" />'.$prependEnd;
+					}
+					/*<input required="required" '.$disabled.' type="number" step="any" id="'.$this->plugin_name.'_cost2" name="'.$this->plugin_name.'_cost2" value="' . esc_attr( $cost ) . '" size="25" /><input type="hidden" id="'.$this->plugin_name.'_cost" step="any" name="'.$this->plugin_name.'_cost" value="' . esc_attr( $cost ) . '" />*/
+
+			} else {
+					$checked = ($value) ? 'checked' : '';
+					echo '<input type="'.$args['subtype'].'" id="'.$args['id'].'" "'.$args['required'].'" name="'.$args['name'].'" size="40" value="1" '.$checked.' />';
+			}
+		break;
+		default:
+		# code...
+		break;
+	}
+}
+
+function register_settings($wp) {	
+	unset($args);
+	$args = array (
+						'type'      => 'input',
+						'subtype'   => 'text',
+						'id'    => 'sbws_token',
+						'name'      => 'sbws_token',
+						'required' => 'true',
+						'get_options_list' => '',
+						'value_type'=>'normal',
+						'wp_data' => 'option'
+				);
+
+	add_settings_field(
+		'sbws_token',
+		'SBWS TOKEN',
+		'settings_page_render_settings_field',
+		'blogdrip',
+		$args
+	);
+}
+
+function add_settings_link($links, $file) {
+	if ( current_filter() === 'plugin_action_links' ) {
+		$url = admin_url( 'options-general.php?page=blogdrip_plugin' );
+	} else {
+		$url = admin_url( '/network/settings.php?page=blogdrip_plugin' );
+	}
+
+	// Prevent warnings in PHP 7.0+ when a plugin uses this filter incorrectly.
+	$links = (array) $links;
+	$links[] = sprintf( '<a href="%s">%s</a>', $url,'Settings' );
+
+	return $links;
+}
+
+add_filter( 'plugin_action_links', 'add_settings_link', 50, 2 );
+add_filter( 'network_admin_plugin_action_links','add_settings_link', 50, 2 );
+
+add_action( 'admin_init','register_settings' );
+
 /*
  * quick and dirty debug
  *
