@@ -4,7 +4,7 @@
 Plugin Name: BlogDrip Web Service
 Plugin URI: https://bremic.co.th
 Description: WordPress Web Service is used to access WordPress resources via WSDL and SOAP. After installation simply open http://yoursite.com/blog/index.php/sbws to test your plugin.
-Version: 1.1
+Version: 1.0
 Author: BREMIC Digital Services
 Author URI: https://bremic.co.th
 */
@@ -40,9 +40,9 @@ Add feature to put yoast seo detail
 
 version: 1.0
 Add feature auto update plugin
+Move token to the setting page
+Add Readme
 
-version: 1.1
-Remove config file
 */
 
 /**
@@ -60,78 +60,53 @@ require_once(dirname(__FILE__) . "/includes/sbws-access.php");
 /**
  * Add left menu to set credential
  */
-
-function blogdrip_settings_page_render_settings_field($args) {
-	if($args['wp_data'] == 'option'){
-		$wp_data_value = get_option($args['name']);
-	} elseif($args['wp_data'] == 'post_meta'){
-		$wp_data_value = get_post_meta($args['post_id'], $args['name'], true );
-	}
-
-	switch ($args['type']) {
-		case 'input':
-			$value = ($args['value_type'] == 'serialized') ? serialize($wp_data_value) : $wp_data_value;
-			if($args['subtype'] != 'checkbox'){
-					$prependStart = (isset($args['prepend_value'])) ? '<div class="input-prepend"> <span class="add-on">'.$args['prepend_value'].'</span>' : '';
-					$prependEnd = (isset($args['prepend_value'])) ? '</div>' : '';
-					$step = (isset($args['step'])) ? 'step="'.$args['step'].'"' : '';
-					$min = (isset($args['min'])) ? 'min="'.$args['min'].'"' : '';
-					$max = (isset($args['max'])) ? 'max="'.$args['max'].'"' : '';
-					if(isset($args['disabled'])){
-							// hide the actual input bc if it was just a disabled input the info saved in the database would be wrong - bc it would pass empty values and wipe the actual information
-							echo $prependStart.'<input type="'.$args['subtype'].'" id="'.$args['id'].'_disabled" '.$step.' '.$max.' '.$min.' name="'.$args['name'].'_disabled" size="40" disabled value="' . esc_attr($value) . '" /><input type="hidden" id="'.$args['id'].'" '.$step.' '.$max.' '.$min.' name="'.$args['name'].'" size="40" value="' . esc_attr($value) . '" />'.$prependEnd;
-					} else {
-							echo $prependStart.'<input type="'.$args['subtype'].'" id="'.$args['id'].'" "'.$args['required'].'" '.$step.' '.$max.' '.$min.' name="'.$args['name'].'" size="40" value="' . esc_attr($value) . '" />'.$prependEnd;
-					}
-					/*<input required="required" '.$disabled.' type="number" step="any" id="'.$this->plugin_name.'_cost2" name="'.$this->plugin_name.'_cost2" value="' . esc_attr( $cost ) . '" size="25" /><input type="hidden" id="'.$this->plugin_name.'_cost" step="any" name="'.$this->plugin_name.'_cost" value="' . esc_attr( $cost ) . '" />*/
-
-			} else {
-					$checked = ($value) ? 'checked' : '';
-					echo '<input type="'.$args['subtype'].'" id="'.$args['id'].'" "'.$args['required'].'" name="'.$args['name'].'" size="40" value="1" '.$checked.' />';
-			}
-		break;
-		default:
-		# code...
-		break;
-	}
-}
-
-function blogdrip_register_settings($wp) {	
-	unset($args);
-	$args = array (
-						'type'      => 'input',
-						'subtype'   => 'text',
-						'id'    => 'sbws_token',
-						'name'      => 'sbws_token',
-						'required' => 'true',
-						'get_options_list' => '',
-						'value_type'=>'normal',
-						'wp_data' => 'option'
-				);
-
-	add_settings_field(
-		'sbws_token',
-		'SBWS TOKEN',
-		'blogdrip_settings_page_render_settings_field',
-		'blogdrip',
-		$args
-	);
-}
-
 function settings_page() {
 	if (!current_user_can('activate_plugins')) return;
 	?>
 	<div class="wrap">
-		<div id="icon-themes" class="icon32"></div>  
+		<div id="icon-themes" class="icon32"></div>
 		<h2>Settings Credential for Blogdrip</h2>  
 		<!--NEED THE settings_errors below so that the errors/success messages are shown after submission - wasn't working once we started using add_menu_page and stopped using add_options_page so needed this-->
 		<?php settings_errors(); ?>  
 		<form method="POST" action="options.php">
-				
-				<?php submit_button(); ?>  
+				<?php settings_fields('blogdrip_plugin');?>
+		    <?php do_settings_sections('blogdrip_plugin')?>
+		    <?php submit_button();?>
 		</form> 
 	</div>
 	<?php
+}
+
+function settings_menu_page_init() {
+	add_settings_section(
+		'blogdrip-settings-section', // id of the section
+		'My Settings', // title to be displayed
+		'', // callback function to be called when opening section
+		'blogdrip_plugin' // page on which to display the section, this should be the same as the slug used in add_submenu_page()
+	);
+
+	// register the setting
+	register_setting(
+		'blogdrip_plugin', // option group
+		'blogdrip_token'
+	);
+
+	add_settings_field(
+		'blogdrip-token-field', // id of the settings field
+		'BlogDrip Token', // title
+		'my_settings_cb', // callback function
+		'blogdrip_plugin', // page on which settings display
+		'blogdrip-settings-section' // section on which to show settings
+	);
+}
+
+function my_settings_cb() {
+	$credential = esc_attr(get_option('blogdrip_token', '00000000-0000-0000-0000-000000000000'));
+	?>
+    <div id="titlediv">
+        <input id="title" type="text" name="blogdrip_token" class="regular-text" value="<?php echo $credential; ?>">
+    </div>
+    <?php
 }
 
 function add_settings_menu_page() {
@@ -145,17 +120,9 @@ function add_settings_menu_page() {
 		'activate_plugins', //capability
 		'blogdrip_plugin', //url
 		'settings_page'); //function
+
+	add_action('admin_init', 'settings_menu_page_init');
 }
-
-// function blogdrip_is_settings_page() {
-// 	if (!isset($_SERVER['QUERY_STRING'])) return false;
-
-// 	parse_str($_SERVER['QUERY_STRING'], $params);
-// 	if (array_key_exists("page", $params) && ($params["page"] == "blogdrip_plugin")) {
-// 			return true;
-// 	}
-// 	return false;
-// }
 
 function add_settings_link($links, $file) {
 	if ( current_filter() === 'plugin_action_links_'.plugin_basename(__FILE__) ) {
@@ -173,8 +140,6 @@ add_filter( 'plugin_action_links_'.plugin_basename(__FILE__), 'add_settings_link
 add_filter( 'network_admin_plugin_action_links','add_settings_link', 50, 2 );
 
 add_action('admin_menu', 'add_settings_menu_page', 50);
-// add_action( 'admin_init', 'blogdrip_register_settings' );
-
 /*
  * quick and dirty debug
  *

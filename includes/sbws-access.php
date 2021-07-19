@@ -1,6 +1,6 @@
 <?php
-require_once(dirname(__FILE__) . "/sbws-config.php");
-
+$credential = esc_attr(get_option('blogdrip_token', '00000000-0000-0000-0000-000000000000'));
+define("SBWS_TOKEN", $credential);
 define("SBWS_PLUGIN_NAME", "blogdrip-web-service");
 define("SBWS_ENTRY_FILE", dirname(__FILE__) . "/../" . SBWS_PLUGIN_NAME . ".php");
 define("SBWS_INDEX_FILE", dirname(__FILE__) . "/sbws-index.php");
