@@ -4,7 +4,7 @@
 Plugin Name: BlogDrip Web Service
 Plugin URI: https://bremic.co.th
 Description: WordPress Web Service is used to access WordPress resources via WSDL and SOAP. After installation simply open http://yoursite.com/blog/index.php/sbws to test your plugin.
-Version: 1.0
+Version: 1.1
 Author: BREMIC Digital Services
 Author URI: https://bremic.co.th
 */
@@ -42,6 +42,9 @@ version: 1.0
 Add feature auto update plugin
 Move token to the setting page
 Add Readme
+
+version: 1.1
+Add allowed_protocols for feature chat so client can send skype:xxxx, viber:xxxx
 
 */
 
@@ -140,6 +143,15 @@ add_filter( 'plugin_action_links_'.plugin_basename(__FILE__), 'add_settings_link
 add_filter( 'network_admin_plugin_action_links','add_settings_link', 50, 2 );
 
 add_action('admin_menu', 'add_settings_menu_page', 50);
+
+
+// Add allow protocal
+function ss_allow_other_protocol( $protocols ){
+	$protocols = array( 'sms', 'tel', 'mailto', 'skype', 'viber', 'weixin', 'http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'irc6', 'ircs', 'gopher', 'nntp', 'feed', 'telnet', 'mms', 'rtsp', 'sms', 'svn', 'tel', 'fax', 'xmpp', 'webcal', 'urn' );
+	return $protocols;
+}
+add_filter( 'kses_allowed_protocols' , 'ss_allow_other_protocol' );
+
 /*
  * quick and dirty debug
  *
