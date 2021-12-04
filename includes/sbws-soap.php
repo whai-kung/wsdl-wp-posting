@@ -10,7 +10,26 @@ require_once(dirname(__FILE__) . "/sbws-valueobjects.php");
  */
 class sb_WebService {
 	/*** POSTS ***/
-	   
+	 
+	function deletePost($token, $postId) {
+		if ($token != SBWS_TOKEN) {
+			throw new SoapFault("Blogger Webservice", "Invalid token");
+		}
+		
+		$postId = is_numeric($postId) ? intval($postId) : 0;
+
+		if ($postId > 0) {
+			$findPost = get_post($postId, OBJECT);
+			if (findPost != null){
+				$result = wp_delete_post($postId, true);
+				return ($result != false);
+			}
+			return false;
+		}
+		
+		return false;
+	}
+
 	function insertPost($token, $post) {
 		if ($token != SBWS_TOKEN) {
 			throw new SoapFault("Blogger Webservice", "Invalid token");
@@ -52,16 +71,21 @@ class sb_WebService {
 			'post_date_gmt' => $valueArray["dateGmt"],
 			'post_category' => $categoryTerms,
 			'tags_input'	  => $valueArray["tags"],
-			'post_status'		=> $valueArray["postStatus"] ?: "publish",
-			'post_feature_img'		=> $valueArray["featureImage"]
+			'post_status'		=> $valueArray["postStatus"] ?: "publish"
 		);
 		
 		// Insert the post into the database
 		$newPostId = wp_insert_post( $my_post );
-		if($valueArray["featureImage"] != null)
-		{
+		if($valueArray["featureImage"] != null) {
 			$this->set_featured_image_from_external_url($valueArray["featureImage"], $newPostId);
 			update_post_meta($newPostId, '_yoast_wpseo_opengraph-image', $valueArray["featureImage"]);
+		}
+
+		if($valueArray["attachmentId"] != null) {
+			$attach_id = $valueArray["attachmentId"];
+			$url = wp_get_attachment_url($attach_id);
+			set_post_thumbnail( $newPostId, $attach_id );
+			update_post_meta($newPostId, '_yoast_wpseo_opengraph-image', $url);
 		}
 
 		// reference : https://www.wpallimport.com/documentation/plugins-themes/yoast-wordpress-seo/
@@ -83,13 +107,11 @@ class sb_WebService {
 		return $newPostId;
 	}
 
-	function defaultAt($value, $default)
-	{
+	private  function defaultAt($value, $default) {
 		return $value == null ? $default : $value;
 	}
 
-	function getYoastDescription($message)
-	{
+	private function getYoastDescription($message) {
 		if ($message != null && strlen($message) > 155)
 		{
 				return substr($message, 0, 150)."..";
@@ -100,7 +122,7 @@ class sb_WebService {
 		}
 	}
 		
-	function set_featured_image_from_external_url($url, $post_id){
+	private function set_featured_image_from_external_url($url, $post_id){
 
 		if ( ! filter_var($url, FILTER_VALIDATE_URL) ||  empty($post_id) ) {
 			return;
@@ -149,25 +171,6 @@ class sb_WebService {
 
 		// And finally assign featured image to post
 		set_post_thumbnail( $post_id, $attach_id );
-	}
-	 
-	function deletePost($token, $postId) {
-		if ($token != SBWS_TOKEN) {
-			throw new SoapFault("Blogger Webservice", "Invalid token");
-		}
-		
-		$postId = is_numeric($postId) ? intval($postId) : 0;
-
-		if ($postId > 0) {
-			$findPost = get_post($postId, OBJECT);
-			if (findPost != null){
-				$result = wp_delete_post($postId, true);
-				return ($result != false);
-			}
-			return false;
-		}
-		
-		return false;
 	}
 	 
 }

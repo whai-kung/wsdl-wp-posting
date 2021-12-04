@@ -19,6 +19,7 @@
           <element name="tags" nillable="true" type="xsd:string" />
 					<element name="postStatus" nillable="true" type="xsd:string" />
 					<element name="featureImage" nillable="true" type="xsd:string" />
+					<element name="attachmentId" nillable="true" type="xsd:string" />
           <element name="categories" nillable="true" type="xsd:string" />
 					<element name="yoastTitle" nillable="true" type="xsd:string" />
 					<element name="yoastDesc" nillable="true" type="xsd:string" />
