@@ -10,13 +10,6 @@ require_once(dirname(__FILE__) . "/sbws-valueobjects.php");
  */
 class sb_WebService {
 	/*** POSTS ***/
-	   
-	function uploadImage($token, $file) {
-		if ($token != SBWS_TOKEN) {
-			throw new SoapFault("Blogger Webservice", "Invalid token");
-		}
-
-	}
 	 
 	function deletePost($token, $postId) {
 		if ($token != SBWS_TOKEN) {
