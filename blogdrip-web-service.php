@@ -224,4 +224,41 @@ register_activation_hook(__FILE__, 'sbws_createWSDL');
 
 // checks whether the request should be handled by WPWS
 add_action("parse_request", "sbws_handle_request");
+
+
+function bd_upload_media($request) {
+	$token = $request->get_header('x-authen-token');
+	if ($token != SBWS_TOKEN) {
+		header("HTTP/1.1 403 Forbidden");
+		exit;
+	}
+	if ( isset( $_FILES["file"] ) ) {
+
+    require_once( ABSPATH . 'wp-admin/includes/image.php' );
+    require_once( ABSPATH . 'wp-admin/includes/file.php' );
+    require_once( ABSPATH . 'wp-admin/includes/media.php' );
+
+		$attachment_id = media_handle_upload( 'file', 0 );
+
+		if ( is_wp_error( $attachment_id ) ) {
+				// There was an error uploading the image.
+				return $attachment_id->get_error_message();
+		} else {
+				// The image was uploaded successfully!
+				$file_url = wp_get_attachment_url($attachment_id);
+				return json_decode('{"attachment_id": "'.$attachment_id.'", "url": "'.$file_url.'"}');
+		}
+
+	} else {
+			return "The empty check failed! Something went wrong!";
+	}
+}
+
+add_action("rest_api_init", function() {
+	register_rest_route('bd/v1', 'upload', [
+		'methods' => 'POST',
+		'callback' => 'bd_upload_media',
+	]);
+});
+
 ?>
