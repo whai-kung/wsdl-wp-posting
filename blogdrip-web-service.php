@@ -4,7 +4,7 @@
 Plugin Name: BlogDrip Web Service
 Plugin URI: https://bremic.co.th
 Description: WordPress Web Service is used to access WordPress resources via WSDL and SOAP. After installation simply open http://yoursite.com/blog/index.php/sbws to test your plugin.
-Version: 1.1
+Version: 1.2
 Author: BREMIC Digital Services
 Author URI: https://bremic.co.th
 */
@@ -45,6 +45,9 @@ Add Readme
 
 version: 1.1
 Add allowed_protocols for feature chat so client can send skype:xxxx, viber:xxxx
+
+version: 1.2
+Add api to upload image and add param `attachmentId` for method `insertPost` to put attachmentId as feature image. 
 
 */
 
