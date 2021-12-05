@@ -16,7 +16,7 @@ define("SB_UPLOAD_DIR", "/wp-content/uploads");
 
 function sbws_getVersion() {
 	$entry_file = file_get_contents(SBWS_ENTRY_FILE);
-	$version = preg_replace("~.*Version:\W*([a-zA-Z0-9\._]*).*~sm", "\\3", $entry_file);
+	$version = preg_replace("~.*Version:\W*([a-zA-Z0-9\._]*).*~sm", "\\1", $entry_file);
 	return $version;
 }
 
