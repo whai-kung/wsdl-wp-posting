@@ -4,7 +4,7 @@
 Plugin Name: BlogDrip Web Service
 Plugin URI: https://bremic.co.th
 Description: WordPress Web Service is used to access WordPress resources via WSDL and SOAP. After installation simply open http://yoursite.com/blog/index.php/sbws to test your plugin.
-Version: 1.2
+Version: 1.3
 Author: BREMIC Digital Services
 Author URI: https://bremic.co.th
 */
@@ -26,28 +26,31 @@ Author URI: https://bremic.co.th
 */
 
 /* Change Log
-Version: 0.0.2
+release: 0.0.2
 Add feature `featureImage`
 
-Version: 0.0.3
+release: 0.0.3
 Add feature `schedule publish`
 
-Version: 0.0.4
-make its compatible with version 0.0.1
+release: 0.0.4
+make its compatible with release 0.0.1
 
-Version: 0.0.5
+release: 0.0.5
 Add feature to put yoast seo detail
 
-version: 1.0
+release: 1.0
 Add feature auto update plugin
 Move token to the setting page
 Add Readme
 
-version: 1.1
+release: 1.1
 Add allowed_protocols for feature chat so client can send skype:xxxx, viber:xxxx
 
-version: 1.2
+release: 1.2
 Add api to upload image and add param `attachmentId` for method `insertPost` to put attachmentId as feature image. 
+
+release: 1.3
+Add api to return current plug-in release version
 
 */
 
@@ -253,14 +256,28 @@ function bd_upload_media($request) {
 		}
 
 	} else {
-			return "The empty check failed! Something went wrong!";
+			return "File not found";
 	}
+}
+
+function bd_version($request) {
+	$token = $request->get_header('x-authen-token');
+	if ($token != SBWS_TOKEN) {
+		header("HTTP/1.1 403 Forbidden");
+		exit;
+	}
+	return sbws_getVersion();
 }
 
 add_action("rest_api_init", function() {
 	register_rest_route('bd/v1', 'upload', [
 		'methods' => 'POST',
 		'callback' => 'bd_upload_media',
+	]);
+
+	register_rest_route('bd/v1', 'version', [
+		'methods' => 'GET',
+		'callback' => 'bd_version',
 	]);
 });
 
