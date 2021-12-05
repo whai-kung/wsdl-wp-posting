@@ -76,12 +76,12 @@ class sb_WebService {
 		
 		// Insert the post into the database
 		$newPostId = wp_insert_post( $my_post );
-		if($valueArray["featureImage"] != null) {
+		if(!empty($valueArray["featureImage"])) {
 			$this->set_featured_image_from_external_url($valueArray["featureImage"], $newPostId);
 			update_post_meta($newPostId, '_yoast_wpseo_opengraph-image', $valueArray["featureImage"]);
 		}
 
-		if($valueArray["attachmentId"] != null) {
+		if(!empty($valueArray["attachmentId"])) {
 			$attach_id = $valueArray["attachmentId"];
 			$url = wp_get_attachment_url($attach_id);
 			set_post_thumbnail( $newPostId, $attach_id );
