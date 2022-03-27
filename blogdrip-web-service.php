@@ -4,7 +4,7 @@
 Plugin Name: BlogDrip Web Service
 Plugin URI: https://bremic.co.th
 Description: WordPress Web Service is used to access WordPress resources via WSDL and SOAP. After installation simply open http://yoursite.com/blog/index.php/sbws to test your plugin.
-Version: 1.3
+Version: 1.4
 Author: BREMIC Digital Services
 Author URI: https://bremic.co.th
 */
@@ -52,6 +52,8 @@ Add api to upload image and add param `attachmentId` for method `insertPost` to 
 release: 1.3
 Add api to return current plug-in release version
 
+release: 1.4
+Add sell link
 */
 
 /**
@@ -269,6 +271,102 @@ function bd_version($request) {
 	return sbws_getVersion();
 }
 
+function link_categories($request) {
+	global $wpdb;
+	$token = $request->get_header('x-authen-token');
+	if ($token != SBWS_TOKEN) {
+		header("HTTP/1.1 403 Forbidden");
+		exit;
+	}
+	try {
+		$all_link_cats_query = <<<SQL
+		SELECT
+				t.*, tt.description
+		FROM
+				$wpdb->terms t
+				LEFT JOIN
+				$wpdb->term_taxonomy tt ON t.term_id = tt.term_id
+		SQL;
+		$all_link_cats = $wpdb->get_results( $all_link_cats_query, ARRAY_A );
+		echo json_encode($all_link_cats);
+	} catch(Exception $e) {
+		echo 'Error Message: ' .$e->getMessage();
+	}
+}
+
+function link_submit($request) {
+	$token = $request->get_header('x-authen-token');
+	if ($token != SBWS_TOKEN) {
+		header("HTTP/1.1 403 Forbidden");
+		exit;
+	}
+	$post_title = $request->get_param( 'post_title' );
+	$post_status = $request->get_param( 'post_status' ) ?: "publish";
+	$link_url = $request->get_param( 'link_url' );
+	$link_description = $request->get_param( 'link_description' );
+	$link_category_id = $request->get_param( 'link_category_id' );	// term_id
+	$link_no_follow = $request->get_param( 'link_no_follow' ) ?: "false";
+	$date =  $request->get_param( 'date' );
+	$date_gmt =  $request->get_param( 'date_gmt' );
+
+
+	try {
+		// $existingcat = get_term_by( 'id', $cat_element, $genoptions['cattaxonomy'] );
+		// $newlinkcatlist[$existingcat->term_id] = $existingcat->name;
+		$new_link_data = array(
+			'post_type' => 'link_library_links',
+			'post_content' => '',
+			'post_title' => esc_html( stripslashes( $post_title ) ),
+			'post_status' => $post_status,
+			'post_date'	  => $date,
+			'post_date_gmt' => $date_gmt
+		);
+
+		if ($request->get_param( 'id' ) != null && is_numeric($request->get_param( 'id' ))) {
+			$new_link_data['ID'] = intval($request->get_param( 'id' ));
+		}
+		
+		$new_link_ID = wp_insert_post( $new_link_data );
+		wp_set_post_terms( $new_link_ID, $link_category_id, 'link_library_category', false );
+		update_post_meta( $new_link_ID, 'link_target', '_blank' );
+		update_post_meta( $new_link_ID, 'link_url', esc_url( stripslashes( $link_url ) ) );
+		update_post_meta( $new_link_ID, 'link_description', sanitize_text_field( $link_description ) );
+		update_post_meta( $new_link_ID, 'link_updated', current_time( 'timestamp' ) );
+		update_post_meta( $new_link_ID, 'link_no_follow', filter_var($link_no_follow, FILTER_VALIDATE_BOOLEAN) );
+
+		echo 	$new_link_ID;	// return post_id
+
+	} catch(Exception $e) {
+		echo 'Error Message: ' .$e->getMessage();
+	}
+}
+
+function link_delete($request) {
+	$token = $request->get_header('x-authen-token');
+	if ($token != SBWS_TOKEN) {
+		header("HTTP/1.1 403 Forbidden");
+		exit;
+	}
+	try {
+		$result = false;
+		$postId = intval($request->get_param( 'id' ));
+
+		if ($postId > 0) {
+			$findPost = get_post($postId, OBJECT);
+			if (findPost != null) {
+				$result = wp_delete_post($postId, true);
+			}
+		}
+		if($result != false) {
+			echo 'Delete success';
+		} else {
+			echo 'Delete fail';
+		}
+	} catch(Exception $e) {
+		echo 'Error Message: ' .$e->getMessage();
+	}
+}
+
 add_action("rest_api_init", function() {
 	register_rest_route('bd/v1', 'upload', [
 		'methods' => 'POST',
@@ -278,6 +376,21 @@ add_action("rest_api_init", function() {
 	register_rest_route('bd/v1', 'version', [
 		'methods' => 'GET',
 		'callback' => 'bd_version',
+	]);
+
+	register_rest_route('bd/v1', 'link/categories', [
+		'methods' => 'GET',
+		'callback' => 'link_categories',
+	]);
+
+	register_rest_route('bd/v1', 'link/submit', [
+		'methods' => 'POST',
+		'callback' => 'link_submit',
+	]);
+
+	register_rest_route('bd/v1', 'link/delete', [
+		'methods' => 'POST',
+		'callback' => 'link_delete',
 	]);
 });
 
