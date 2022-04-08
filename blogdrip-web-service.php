@@ -281,11 +281,13 @@ function link_categories($request) {
 	try {
 		$all_link_cats_query = <<<SQL
 		SELECT
-				t.*, tt.description
+				t.*, tt.description, tt.count
 		FROM
 				$wpdb->terms t
 				LEFT JOIN
 				$wpdb->term_taxonomy tt ON t.term_id = tt.term_id
+		WHERE
+				tt.taxonomy = 'link_library_category'
 		SQL;
 		$all_link_cats = $wpdb->get_results( $all_link_cats_query, ARRAY_A );
 		echo json_encode($all_link_cats);
