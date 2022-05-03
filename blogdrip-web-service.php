@@ -296,6 +296,43 @@ function link_categories($request) {
 	}
 }
 
+function all_links($request) {
+	global $wpdb;
+	$token = $request->get_header('x-authen-token');
+	if ($token != SBWS_TOKEN) {
+		header("HTTP/1.1 403 Forbidden");
+		exit;
+	}
+	try {
+		$all_link_cats_query = <<<SQL
+		SELECT
+				, p.ID
+				, p.post_title
+				, t.term_taxonomy_id as term_id
+				, p.post_date_gmt
+				, p.post_status
+				, p.post_modified_gmt
+				, p.post_content
+				, p.comment_status
+				, (SELECT meta_value FROM $wpdb->postmeta WHERE post_id = p.ID AND meta_key = 'link_no_follow') AS no_follow
+				, (SELECT meta_value FROM $wpdb->postmeta WHERE post_id = p.ID AND meta_key = 'link_description') AS description
+				, (SELECT meta_value FROM $wpdb->postmeta WHERE post_id = p.ID AND meta_key = 'link_url') AS url
+		FROM
+				$wpdb->posts p
+				INNER JOIN
+				$wpdb->term_relationships r ON p.ID = r.object_id
+				INNER JOIN
+				$wpdb->term_taxonomy t ON r.term_taxonomy_id = t.term_taxonomy_id
+		WHERE
+				t.taxonomy = 'link_library_category'
+		SQL;
+		$all_link_cats = $wpdb->get_results( $all_link_cats_query, ARRAY_A );
+		echo json_encode($all_link_cats);
+	} catch(Exception $e) {
+		echo 'Error Message: ' .$e->getMessage();
+	}
+}
+
 function link_submit($request) {
 	$token = $request->get_header('x-authen-token');
 	if ($token != SBWS_TOKEN) {
@@ -393,6 +430,11 @@ add_action("rest_api_init", function() {
 	register_rest_route('bd/v1', 'link/delete', [
 		'methods' => 'POST',
 		'callback' => 'link_delete',
+	]);
+
+	register_rest_route('bd/v1', 'link/all', [
+		'methods' => 'GET',
+		'callback' => 'all_links',
 	]);
 });
 
