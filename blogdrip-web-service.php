@@ -4,7 +4,7 @@
 Plugin Name: BlogDrip Web Service
 Plugin URI: https://bremic.co.th
 Description: WordPress Web Service is used to access WordPress resources via WSDL and SOAP. After installation simply open http://yoursite.com/blog/index.php/sbws to test your plugin.
-Version: 1.4
+Version: 1.5
 Author: BREMIC Digital Services
 Author URI: https://bremic.co.th
 */
@@ -54,6 +54,9 @@ Add api to return current plug-in release version
 
 release: 1.4
 Add sell link
+
+release: 1.5
+Add api get all link
 */
 
 /**
@@ -304,9 +307,9 @@ function all_links($request) {
 		exit;
 	}
 	try {
-		$all_link_cats_query = <<<SQL
+		$all_link_query = <<<SQL
 		SELECT
-				, p.ID
+				p.ID
 				, p.post_title
 				, t.term_taxonomy_id as term_id
 				, p.post_date_gmt
@@ -319,14 +322,14 @@ function all_links($request) {
 				, (SELECT meta_value FROM $wpdb->postmeta WHERE post_id = p.ID AND meta_key = 'link_url') AS url
 		FROM
 				$wpdb->posts p
-				INNER JOIN
+				LEFT JOIN
 				$wpdb->term_relationships r ON p.ID = r.object_id
-				INNER JOIN
+				LEFT JOIN
 				$wpdb->term_taxonomy t ON r.term_taxonomy_id = t.term_taxonomy_id
 		WHERE
 				t.taxonomy = 'link_library_category'
 		SQL;
-		$all_link_cats = $wpdb->get_results( $all_link_cats_query, ARRAY_A );
+		$all_link_cats = $wpdb->get_results( $all_link_query, ARRAY_A );
 		echo json_encode($all_link_cats);
 	} catch(Exception $e) {
 		echo 'Error Message: ' .$e->getMessage();
