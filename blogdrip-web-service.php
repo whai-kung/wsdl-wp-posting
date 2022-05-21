@@ -4,7 +4,7 @@
 Plugin Name: BlogDrip Web Service
 Plugin URI: https://bremic.co.th
 Description: WordPress Web Service is used to access WordPress resources via WSDL and SOAP. After installation simply open http://yoursite.com/blog/index.php/sbws to test your plugin.
-Version: 1.5
+Version: 1.6
 Author: BREMIC Digital Services
 Author URI: https://bremic.co.th
 */
@@ -57,6 +57,9 @@ Add sell link
 
 release: 1.5
 Add api get all link
+
+release: 1.6
+Add api to submit and delete an article
 */
 
 /**
@@ -70,6 +73,7 @@ $myUpdateChecker = Puc_v4_Factory::buildUpdateChecker(
 );
 
 require_once(dirname(__FILE__) . "/includes/sbws-access.php");
+require_once(dirname(__FILE__) . "/includes/sbws-valueobjects.php");
 
 /**
  * Add left menu to set credential
@@ -236,7 +240,7 @@ register_activation_hook(__FILE__, 'sbws_createWSDL');
 // checks whether the request should be handled by WPWS
 add_action("parse_request", "sbws_handle_request");
 
-
+// POST bd/v1/upload
 function bd_upload_media($request) {
 	$token = $request->get_header('x-authen-token');
 	if ($token != SBWS_TOKEN) {
@@ -265,6 +269,7 @@ function bd_upload_media($request) {
 	}
 }
 
+// GET bd/v1/version
 function bd_version($request) {
 	$token = $request->get_header('x-authen-token');
 	if ($token != SBWS_TOKEN) {
@@ -274,31 +279,7 @@ function bd_version($request) {
 	return sbws_getVersion();
 }
 
-function link_categories($request) {
-	global $wpdb;
-	$token = $request->get_header('x-authen-token');
-	if ($token != SBWS_TOKEN) {
-		header("HTTP/1.1 403 Forbidden");
-		exit;
-	}
-	try {
-		$all_link_cats_query = <<<SQL
-		SELECT
-				t.*, tt.description, tt.count
-		FROM
-				$wpdb->terms t
-				LEFT JOIN
-				$wpdb->term_taxonomy tt ON t.term_id = tt.term_id
-		WHERE
-				tt.taxonomy = 'link_library_category'
-		SQL;
-		$all_link_cats = $wpdb->get_results( $all_link_cats_query, ARRAY_A );
-		echo json_encode($all_link_cats);
-	} catch(Exception $e) {
-		echo 'Error Message: ' .$e->getMessage();
-	}
-}
-
+// GET bd/v1/link/categories
 function all_links($request) {
 	global $wpdb;
 	$token = $request->get_header('x-authen-token');
@@ -336,6 +317,7 @@ function all_links($request) {
 	}
 }
 
+// POST bd/v1/link/submit
 function link_submit($request) {
 	$token = $request->get_header('x-authen-token');
 	if ($token != SBWS_TOKEN) {
@@ -383,7 +365,145 @@ function link_submit($request) {
 	}
 }
 
+// POST bd/v1/link/delete
 function link_delete($request) {
+	$token = $request->get_header('x-authen-token');
+	if ($token != SBWS_TOKEN) {
+		header("HTTP/1.1 403 Forbidden");
+		exit;
+	}
+	try {
+		$result = false;
+		$postId = intval($request->get_param( 'id' ));
+
+		if ($postId > 0) {
+			$findPost = get_post($postId, OBJECT);
+			if (findPost != null) {
+				$result = wp_delete_post($postId, true);
+			}
+		}
+		if($result != false) {
+			echo 'Delete success';
+		} else {
+			echo 'Delete fail';
+		}
+	} catch(Exception $e) {
+		echo 'Error Message: ' .$e->getMessage();
+	}
+}
+
+// GET bd/v1/link/all
+function link_categories($request) {
+	global $wpdb;
+	$token = $request->get_header('x-authen-token');
+	if ($token != SBWS_TOKEN) {
+		header("HTTP/1.1 403 Forbidden");
+		exit;
+	}
+	try {
+		$all_link_cats_query = <<<SQL
+		SELECT
+				t.*, tt.description, tt.count
+		FROM
+				$wpdb->terms t
+				LEFT JOIN
+				$wpdb->term_taxonomy tt ON t.term_id = tt.term_id
+		WHERE
+				tt.taxonomy = 'link_library_category'
+		SQL;
+		$all_link_cats = $wpdb->get_results( $all_link_cats_query, ARRAY_A );
+		echo json_encode($all_link_cats);
+	} catch(Exception $e) {
+		echo 'Error Message: ' .$e->getMessage();
+	}
+}
+
+// POST bd/v1/blog/submit
+function blog_submit($request) {
+	$token = $request->get_header('x-authen-token');
+	if ($token != SBWS_TOKEN) {
+		header("HTTP/1.1 403 Forbidden");
+		exit;
+	}
+
+	$categoryTerms = null;
+	if ($request->get_param( 'categories' ) != null && $request->get_param( 'categories' ) != '') {
+		// Set category
+		$categoryName = $request->get_param( 'categories' );
+		$addToCat = term_exists($categoryName, "category");
+		
+		if ($addToCat != 0 && $addToCat !== null) {
+			$addToCatId = $addToCat;
+		} else {
+			$addToCat = wp_insert_term($categoryName, "category");
+			$addToCatId = $addToCat;
+		} 
+
+		$categoryTerms = array($addToCatId['term_id']);
+	}
+	
+	$title = $request->get_param( 'title' );
+	$content = $request->get_param( 'content' );
+	$date =  $request->get_param( 'date' );
+	$date_gmt =  $request->get_param( 'dateGmt' );
+	$category = $categoryTerms;
+	$tags_input = $request->get_param( 'tags' ) ?: "";
+	$status = $request->get_param( 'postStatus' ) ?: "publish";
+
+	try {
+		$new_blog_data = array(
+			'post_title' => esc_html( stripslashes( $title ) ),
+			'post_content' => esc_html( stripslashes( $content ) ),
+			'post_date'	  => $date,
+			'post_date_gmt' => $date_gmt,
+			'post_category' => $category,
+			'tags_input'	  => $tags_input,
+			'post_status' => $status,
+		);
+
+		if ($request->get_param( 'id' ) != null && is_numeric($request->get_param( 'id' ))) {
+			$new_blog_data['ID'] = intval($request->get_param( 'id' ));
+			$r = wp_set_object_terms($new_blog_data['ID'], null, 'category' ); 
+		}
+		
+		$new_blog_ID = wp_insert_post( $new_blog_data );
+		if(!empty($request->get_param( 'featureImage' ))) {
+			$this->set_featured_image_from_external_url($request->get_param( 'featureImage' ), $newPostId);
+			update_post_meta($newPostId, '_yoast_wpseo_opengraph-image', $request->get_param( 'featureImage' ));
+		}
+	
+		if(!empty($request->get_param( 'attachmentId' ))) {
+			$attach_id = $request->get_param( 'attachmentId' );
+			$url = wp_get_attachment_url($attach_id);
+			set_post_thumbnail( $newPostId, $attach_id );
+			update_post_meta($newPostId, '_yoast_wpseo_opengraph-image', $url);
+		}
+
+		// reference : https://www.wpallimport.com/documentation/plugins-themes/yoast-wordpress-seo/
+		/** 
+		 * yoast_title
+		 * yoast_desc
+		 * yoast_fb_title
+		 * yoast_fb_desc
+		 * yoast_tw_title
+		 * yoast_tw_desc
+		*/
+		update_post_meta($newPostId, '_yoast_wpseo_title', $this->defaultAt($request->get_param( 'yoastTitle' ), $request->get_param( 'title' )));
+		update_post_meta($newPostId, '_yoast_wpseo_metadesc', $this->defaultAt($this->getYoastDescription($request->get_param( 'yoastDesc' )), $this->getYoastDescription($request->get_param( 'content' ))));
+		update_post_meta($newPostId, '_yoast_wpseo_opengraph-title', $this->defaultAt($request->get_param( 'yoastFBTitle' ), $request->get_param( 'title' )));
+		update_post_meta($newPostId, '_yoast_wpseo_opengraph-description', $this->defaultAt($this->getYoastDescription($request->get_param( 'yoastFBDesc' )), $this->getYoastDescription($request->get_param( 'content' ))));
+		update_post_meta($newPostId, '_yoast_wpseo_twitter-title', $this->defaultAt($request->get_param( 'yoastTWTitle' ), $request->get_param( 'title' )));
+		update_post_meta($newPostId, '_yoast_wpseo_twitter-description', $this->defaultAt($this->getYoastDescription($request->get_param( 'yoastTWDesc' )), $this->getYoastDescription($request->get_param( 'content' ))));
+
+		echo 	$new_blog_ID;	// return post_id
+
+	} catch(Exception $e) {
+		echo 'Error Message: ' .$e->getMessage();
+	}
+}
+
+// POST bd/v1/blog/delete
+function blog_delete($request) {
 	$token = $request->get_header('x-authen-token');
 	if ($token != SBWS_TOKEN) {
 		header("HTTP/1.1 403 Forbidden");
@@ -439,6 +559,82 @@ add_action("rest_api_init", function() {
 		'methods' => 'GET',
 		'callback' => 'all_links',
 	]);
+
+	register_rest_route('bd/v1', 'blog/submit', [
+		'methods' => 'POST',
+		'callback' => 'blog_submit',
+	]);
+
+	register_rest_route('bd/v1', 'blog/delete', [
+		'methods' => 'POST',
+		'callback' => 'blog_delete',
+	]);
 });
+
+function defaultAt($value, $default) {
+	return $value == null ? $default : $value;
+}
+
+function getYoastDescription($message) {
+	if ($message != null && strlen($message) > 155)
+	{
+			return substr($message, 0, 150)."..";
+	}
+	else
+	{
+			return $message;
+	}
+}
+	
+function set_featured_image_from_external_url($url, $post_id){
+
+	if ( ! filter_var($url, FILTER_VALIDATE_URL) ||  empty($post_id) ) {
+		return;
+	}
+	
+	// Add Featured Image to Post
+	$image_url 		  = preg_replace('/\?.*/', '', $url); // removing query string from url & Define the image URL here
+	$image_name       = basename($image_url);
+	$upload_dir       = wp_upload_dir(); // Set upload folder
+	$image_data       = file_get_contents($url); // Get image data
+	$unique_file_name = wp_unique_filename( $upload_dir['path'], $image_name ); // Generate unique name
+	$filename         = basename( $unique_file_name ); // Create image file name
+
+	// Check folder permission and define file location
+	if( wp_mkdir_p( $upload_dir['path'] ) ) {
+		$file = $upload_dir['path'] . '/' . $filename;
+	} else {
+		$file = $upload_dir['basedir'] . '/' . $filename;
+	}
+
+	// Create the image  file on the server
+	file_put_contents( $file, $image_data );
+
+	// Check image file type
+	$wp_filetype = wp_check_filetype( $filename, null );
+
+	// Set attachment data
+	$attachment = array(
+		'post_mime_type' => $wp_filetype['type'],
+		'post_title'     => sanitize_file_name( $filename ),
+		'post_content'   => '',
+		'post_status'    => 'inherit'
+	);
+
+	// Create the attachment
+	$attach_id = wp_insert_attachment( $attachment, $file, $post_id );
+
+	// Include image.php
+	require_once(ABSPATH . 'wp-admin/includes/image.php');
+
+	// Define attachment metadata
+	$attach_data = wp_generate_attachment_metadata( $attach_id, $file );
+
+	// Assign metadata to attachment
+	wp_update_attachment_metadata( $attach_id, $attach_data );
+
+	// And finally assign featured image to post
+	set_post_thumbnail( $post_id, $attach_id );
+}
 
 ?>
