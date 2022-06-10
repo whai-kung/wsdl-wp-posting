@@ -453,7 +453,7 @@ function blog_submit($request) {
 	try {
 		$new_blog_data = array(
 			'post_title' => esc_html( stripslashes( $title ) ),
-			'post_content' => esc_html( stripslashes( $content ) ),
+			'post_content' => $content,
 			'post_date'	  => $date,
 			'post_date_gmt' => $date_gmt,
 			'post_category' => $category,
@@ -466,9 +466,9 @@ function blog_submit($request) {
 			$r = wp_set_object_terms($new_blog_data['ID'], null, 'category' ); 
 		}
 		
-		$new_blog_ID = wp_insert_post( $new_blog_data );
+		$newPostId = wp_insert_post( $new_blog_data );
 		if(!empty($request->get_param( 'featureImage' ))) {
-			$this->set_featured_image_from_external_url($request->get_param( 'featureImage' ), $newPostId);
+			set_featured_image_from_external_url($request->get_param( 'featureImage' ), $newPostId);
 			update_post_meta($newPostId, '_yoast_wpseo_opengraph-image', $request->get_param( 'featureImage' ));
 		}
 	
@@ -488,14 +488,16 @@ function blog_submit($request) {
 		 * yoast_tw_title
 		 * yoast_tw_desc
 		*/
-		update_post_meta($newPostId, '_yoast_wpseo_title', $this->defaultAt($request->get_param( 'yoastTitle' ), $request->get_param( 'title' )));
-		update_post_meta($newPostId, '_yoast_wpseo_metadesc', $this->defaultAt($this->getYoastDescription($request->get_param( 'yoastDesc' )), $this->getYoastDescription($request->get_param( 'content' ))));
-		update_post_meta($newPostId, '_yoast_wpseo_opengraph-title', $this->defaultAt($request->get_param( 'yoastFBTitle' ), $request->get_param( 'title' )));
-		update_post_meta($newPostId, '_yoast_wpseo_opengraph-description', $this->defaultAt($this->getYoastDescription($request->get_param( 'yoastFBDesc' )), $this->getYoastDescription($request->get_param( 'content' ))));
-		update_post_meta($newPostId, '_yoast_wpseo_twitter-title', $this->defaultAt($request->get_param( 'yoastTWTitle' ), $request->get_param( 'title' )));
-		update_post_meta($newPostId, '_yoast_wpseo_twitter-description', $this->defaultAt($this->getYoastDescription($request->get_param( 'yoastTWDesc' )), $this->getYoastDescription($request->get_param( 'content' ))));
+		update_post_meta($newPostId, '_yoast_wpseo_title', defaultAt($request->get_param( 'yoastTitle' ), $title));
+		update_post_meta($newPostId, '_yoast_wpseo_metadesc', defaultAt(getYoastDescription($request->get_param( 'yoastDesc' )), getYoastDescription($content)));
+		update_post_meta($newPostId, '_yoast_wpseo_opengraph-title', defaultAt($request->get_param( 'yoastFBTitle' ), $title));
+		update_post_meta($newPostId, '_yoast_wpseo_opengraph-description', defaultAt(getYoastDescription($request->get_param( 'yoastFBDesc' )), getYoastDescription($content)));
+		update_post_meta($newPostId, '_yoast_wpseo_twitter-title', defaultAt($request->get_param( 'yoastTWTitle' ), $title));
+		update_post_meta($newPostId, '_yoast_wpseo_twitter-description', defaultAt(getYoastDescription($request->get_param( 'yoastTWDesc' )), getYoastDescription($content)));
 
-		echo 	$new_blog_ID;	// return post_id
+		
+		$result = array('id' => $newPostId, 'url' => get_permalink($newPostId));
+		echo 	json_encode($result);
 
 	} catch(Exception $e) {
 		echo 'Error Message: ' .$e->getMessage();
@@ -524,6 +526,22 @@ function blog_delete($request) {
 		} else {
 			echo 'Delete fail';
 		}
+	} catch(Exception $e) {
+		echo 'Error Message: ' .$e->getMessage();
+	}
+}
+
+// GET bd/v1/blog/url
+function blog_url($request) {
+	$token = $request->get_header('x-authen-token');
+	if ($token != SBWS_TOKEN) {
+		header("HTTP/1.1 403 Forbidden");
+		exit;
+	}
+	try {
+		$post_id = $request->get_param( 'id' );
+		$result = array('id' => $post_id, 'url' => get_permalink($post_id));
+		echo json_encode($result);
 	} catch(Exception $e) {
 		echo 'Error Message: ' .$e->getMessage();
 	}
@@ -568,6 +586,11 @@ add_action("rest_api_init", function() {
 	register_rest_route('bd/v1', 'blog/delete', [
 		'methods' => 'POST',
 		'callback' => 'blog_delete',
+	]);
+
+	register_rest_route('bd/v1', 'blog/url', [
+		'methods' => 'GET',
+		'callback' => 'blog_url',
 	]);
 });
 
