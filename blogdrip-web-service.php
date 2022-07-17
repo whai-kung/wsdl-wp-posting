@@ -392,7 +392,7 @@ function link_delete($request) {
 	}
 }
 
-// GET bd/v1/link/all
+// GET bd/v1/link/categories
 function link_categories($request) {
 	global $wpdb;
 	$token = $request->get_header('x-authen-token');
@@ -410,6 +410,32 @@ function link_categories($request) {
 				$wpdb->term_taxonomy tt ON t.term_id = tt.term_id
 		WHERE
 				tt.taxonomy = 'link_library_category'
+		SQL;
+		$all_link_cats = $wpdb->get_results( $all_link_cats_query, ARRAY_A );
+		echo json_encode($all_link_cats);
+	} catch(Exception $e) {
+		echo 'Error Message: ' .$e->getMessage();
+	}
+}
+
+// GET bd/v1/blog/categories
+function blog_categories($request) {
+	global $wpdb;
+	$token = $request->get_header('x-authen-token');
+	if ($token != SBWS_TOKEN) {
+		header("HTTP/1.1 403 Forbidden");
+		exit;
+	}
+	try {
+		$all_link_cats_query = <<<SQL
+		SELECT
+				t.*, tt.description, tt.count
+		FROM
+				$wpdb->terms t
+				LEFT JOIN
+				$wpdb->term_taxonomy tt ON t.term_id = tt.term_id
+		WHERE
+				tt.taxonomy = 'category'
 		SQL;
 		$all_link_cats = $wpdb->get_results( $all_link_cats_query, ARRAY_A );
 		echo json_encode($all_link_cats);
@@ -591,6 +617,11 @@ add_action("rest_api_init", function() {
 	register_rest_route('bd/v1', 'blog/url', [
 		'methods' => 'GET',
 		'callback' => 'blog_url',
+	]);
+
+	register_rest_route('bd/v1', 'blog/categories', [
+		'methods' => 'GET',
+		'callback' => 'blog_categories',
 	]);
 });
 
