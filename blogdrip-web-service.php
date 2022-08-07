@@ -2,11 +2,11 @@
 
 /*
 Plugin Name: BlogDrip Web Service
-Plugin URI: https://bremic.co.th
-Description: WordPress Web Service is used to access WordPress resources via WSDL and SOAP. After installation simply open http://yoursite.com/blog/index.php/sbws to test your plugin.
+Plugin URI: https://blogdrip.com/
+Description: WordPress Web Service is used to access WordPress resources via APIs. After installation simply open https://www.organicfoods.in.th/wp-json/bd/v1/version to test the plugin.
 Version: 1.7
-Author: BREMIC Digital Services
-Author URI: https://bremic.co.th
+Author: BlogDrip Content Marketing Platform
+Author URI: https://blogdrip.com/
 */
 
 /*  Copyright 2021 BREMIC Digital Services (email: servicedesk@bremic.co.th)
