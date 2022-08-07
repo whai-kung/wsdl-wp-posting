@@ -3,7 +3,7 @@
 /*
 Plugin Name: BlogDrip Web Service
 Plugin URI: https://blogdrip.com/
-Description: WordPress Web Service is used to access WordPress resources via APIs. After installation simply open https://www.organicfoods.in.th/wp-json/bd/v1/version to test the plugin.
+Description: WordPress Web Service is used to access WordPress resources via APIs. After installation simply open https://yoursite.com/wp-json/bd/v1/version to test the plugin.
 Version: 1.7
 Author: BlogDrip Content Marketing Platform
 Author URI: https://blogdrip.com/
