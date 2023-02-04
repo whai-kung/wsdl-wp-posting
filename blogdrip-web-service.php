@@ -4,7 +4,7 @@
 Plugin Name: BlogDrip Web Service
 Plugin URI: https://blogdrip.com/
 Description: WordPress Web Service is used to access WordPress resources via APIs. After installation simply open https://yoursite.com/wp-json/bd/v1/version to test the plugin.
-Version: 1.7
+Version: 1.7.1
 Author: BlogDrip Content Marketing Platform
 Author URI: https://blogdrip.com/
 */
@@ -26,44 +26,9 @@ Author URI: https://blogdrip.com/
 */
 
 /* Change Log
-release: 0.0.2
+release: 0.0.1
 Add feature `featureImage`
 
-release: 0.0.3
-Add feature `schedule publish`
-
-release: 0.0.4
-make its compatible with release 0.0.1
-
-release: 0.0.5
-Add feature to put yoast seo detail
-
-release: 1.0
-Add feature auto update plugin
-Move token to the setting page
-Add Readme
-
-release: 1.1
-Add allowed_protocols for feature chat so client can send skype:xxxx, viber:xxxx
-
-release: 1.2
-Add api to upload image and add param `attachmentId` for method `insertPost` to put attachmentId as feature image. 
-
-release: 1.3
-Add api to return current plug-in release version
-
-release: 1.4
-Add sell link
-
-release: 1.5
-Add api get all link
-
-release: 1.6
-Add api to submit and delete an article
-
-release: 1.7
-return exact url after post via api
-Rename plugin under setting
 */
 
 /**
@@ -76,8 +41,7 @@ $myUpdateChecker = Puc_v4_Factory::buildUpdateChecker(
 	'unique-plugin-or-theme-slug'
 );
 
-require_once(dirname(__FILE__) . "/includes/sbws-access.php");
-require_once(dirname(__FILE__) . "/includes/sbws-valueobjects.php");
+require_once(dirname(__FILE__) . "/includes/bdws-access.php");
 
 /**
  * Add left menu to set credential
@@ -160,9 +124,7 @@ function add_settings_link($links, $file) {
 
 add_filter( 'plugin_action_links_'.plugin_basename(__FILE__), 'add_settings_link', 50, 2 );
 add_filter( 'network_admin_plugin_action_links','add_settings_link', 50, 2 );
-
 add_action('admin_menu', 'add_settings_menu_page', 50);
-
 
 // Add allow protocal
 function ss_allow_other_protocol( $protocols ){
@@ -171,83 +133,16 @@ function ss_allow_other_protocol( $protocols ){
 }
 add_filter( 'kses_allowed_protocols' , 'ss_allow_other_protocol' );
 
-/*
- * quick and dirty debug
- *
-require_once(WPWS_SOAP_SERVER_FILE);
-$x = new wp_WebService();
-$x->getGallery(123);
-exit;
-/**/
-
-/**
- * Catches index.php/wpws requests, stops further execution by WordPress
- * and handles the request depending on the request type.
- *
- * The are 3 types of treatment:
- * 1) User hasn't requested a WSDL file nor a SOAP operation => HTML output of general information
- * 2) User has requested requested WSDL file => deliveration by SoapServer instance
- * 3) User has submited a SOAP operation request => treatment by SoapServer instance
- *
- * Because the caller needs to know where he can access the service
- * the correct blog address needs to be specified in the service port of the WSDL.
- * For that reason only a template WSDL file exists. Should the script detect that
- * a customized WSDL with the correct address doesn't exist it creates it
- * by making a copy of the template WSDL and by replacing the address placeholder.
- * Should you ever need to reallocate the Blog simply delete the wpws.wsdl but provoke it's recreation.
- */
-function sbws_handle_request($wp) {	
-	// Look for the magic /wpws string in the $_SERVER variable
-	$wpws_found = false;
-	$wsdl_requested = false;
-	foreach($_SERVER as $val) {
-		if(is_string($val) && strlen($val) >= 5 && substr($val, 0, 5) == "/sbws") {
-			$wpws_found = true;
-			if(isset($_SERVER["QUERY_STRING"]) && strpos($_SERVER["QUERY_STRING"], "?wsdl") !== false) $wsdl_requested = true;
-			break;
-		}
-	}
-	
-	if($wpws_found) {
-		// make sure the QUERY_STRING is correctly set to ?wsdl so the SoapServer instance delivers the wsdl file
-		if($wsdl_requested) {
-			header("Content-type: text/xml");
-			echo sbws_getWSDLfromTemplate();
-			exit;
-		} else if(!isset($_SERVER["HTTP_SOAPACTION"])) {
-			// client hasn't requested a SOAP operation
-			// return HTML page
-			include(SBWS_INDEX_FILE);
-		} else {
-			// Create a customized WSDL file on disk
-			// so the SoapServer can take this copy to load from.
-			sbws_createWSDL();
-			 
-			// SoapServer handles both: deliveration of the requested WSDL file
-			// and execution of SOAP operations
-			header("Content-type: text/xml");
-			require_once(SBWS_SOAP_SERVER_FILE);
-			
-			ini_set("soap.wsdl_cache_enabled", "0");
-			$server = new SoapServer(SBWS_WSDL, array("cache_wsdl" => WSDL_CACHE_NONE));
-			$server->setClass(SBWS_SOAP_SERVER_CLASS);
-			$server->handle();
-		}
-		exit;
-	}
-	// no sbws-request, go on with WordPress execution
-}
-
 // creates a customized WSDL on plugin activation
-register_activation_hook(__FILE__, 'sbws_createWSDL');
+register_activation_hook(__FILE__, 'BDWS_createWSDL');
 
 // checks whether the request should be handled by WPWS
-add_action("parse_request", "sbws_handle_request");
+add_action("parse_request", "BDWS_handle_request");
 
 // POST bd/v1/upload
 function bd_upload_media($request) {
 	$token = $request->get_header('x-authen-token');
-	if ($token != SBWS_TOKEN) {
+	if ($token != BDWS_TOKEN) {
 		header("HTTP/1.1 403 Forbidden");
 		exit;
 	}
@@ -276,18 +171,18 @@ function bd_upload_media($request) {
 // GET bd/v1/version
 function bd_version($request) {
 	$token = $request->get_header('x-authen-token');
-	if ($token != SBWS_TOKEN) {
+	if ($token != BDWS_TOKEN) {
 		header("HTTP/1.1 403 Forbidden");
 		exit;
 	}
-	return sbws_getVersion();
+	return BDWS_getVersion();
 }
 
 // GET bd/v1/link/categories
 function all_links($request) {
 	global $wpdb;
 	$token = $request->get_header('x-authen-token');
-	if ($token != SBWS_TOKEN) {
+	if ($token != BDWS_TOKEN) {
 		header("HTTP/1.1 403 Forbidden");
 		exit;
 	}
@@ -324,7 +219,7 @@ function all_links($request) {
 // POST bd/v1/link/submit
 function link_submit($request) {
 	$token = $request->get_header('x-authen-token');
-	if ($token != SBWS_TOKEN) {
+	if ($token != BDWS_TOKEN) {
 		header("HTTP/1.1 403 Forbidden");
 		exit;
 	}
@@ -372,7 +267,7 @@ function link_submit($request) {
 // POST bd/v1/link/delete
 function link_delete($request) {
 	$token = $request->get_header('x-authen-token');
-	if ($token != SBWS_TOKEN) {
+	if ($token != BDWS_TOKEN) {
 		header("HTTP/1.1 403 Forbidden");
 		exit;
 	}
@@ -400,7 +295,7 @@ function link_delete($request) {
 function link_categories($request) {
 	global $wpdb;
 	$token = $request->get_header('x-authen-token');
-	if ($token != SBWS_TOKEN) {
+	if ($token != BDWS_TOKEN) {
 		header("HTTP/1.1 403 Forbidden");
 		exit;
 	}
@@ -426,7 +321,7 @@ function link_categories($request) {
 function blog_categories($request) {
 	global $wpdb;
 	$token = $request->get_header('x-authen-token');
-	if ($token != SBWS_TOKEN) {
+	if ($token != BDWS_TOKEN) {
 		header("HTTP/1.1 403 Forbidden");
 		exit;
 	}
@@ -451,7 +346,7 @@ function blog_categories($request) {
 // POST bd/v1/blog/submit
 function blog_submit($request) {
 	$token = $request->get_header('x-authen-token');
-	if ($token != SBWS_TOKEN) {
+	if ($token != BDWS_TOKEN) {
 		header("HTTP/1.1 403 Forbidden");
 		exit;
 	}
@@ -537,7 +432,7 @@ function blog_submit($request) {
 // POST bd/v1/blog/delete
 function blog_delete($request) {
 	$token = $request->get_header('x-authen-token');
-	if ($token != SBWS_TOKEN) {
+	if ($token != BDWS_TOKEN) {
 		header("HTTP/1.1 403 Forbidden");
 		exit;
 	}
@@ -564,7 +459,7 @@ function blog_delete($request) {
 // GET bd/v1/blog/url
 function blog_url($request) {
 	$token = $request->get_header('x-authen-token');
-	if ($token != SBWS_TOKEN) {
+	if ($token != BDWS_TOKEN) {
 		header("HTTP/1.1 403 Forbidden");
 		exit;
 	}

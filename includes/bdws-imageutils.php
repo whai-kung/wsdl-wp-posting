@@ -1,11 +1,11 @@
 <?php
 
-require_once(dirname(__FILE__) . "/sbws-access.php");
+require_once(dirname(__FILE__) . "/bdws-access.php");
 
-define("SBWS_RESIZE_IMAGE_TEMPFILE", SBWS_CACHE_DIR . "/" . sbws_genUniqueCode() . ".img");
-define("SBWS_RESIZE_IMAGE_ESCAPESIGN", "---");
+define("BDWS_RESIZE_IMAGE_TEMPFILE", BDWS_CACHE_DIR . "/" . BDWS_genUniqueCode() . ".img");
+define("BDWS_RESIZE_IMAGE_ESCAPESIGN", "---");
 
-class sbws_ImageUtils {
+class BDWS_ImageUtils {
 	
 	/**
 	 * Returns true if the given file resides in the given directory.
@@ -32,11 +32,11 @@ class sbws_ImageUtils {
 	 */
 	function generate_cache_filename($src, $width, $height, $quality) {
 		$normalized = (strpos($src, "/") == 0) ? substr($src, 1) : $src;
-		$escaped = str_replace(SBWS_RESIZE_IMAGE_ESCAPESIGN, SBWS_RESIZE_IMAGE_ESCAPESIGN . SBWS_RESIZE_IMAGE_ESCAPESIGN, $normalized);
-		$masked = str_replace("/", SBWS_RESIZE_IMAGE_ESCAPESIGN, $escaped);
-		$widthed = $masked . SBWS_RESIZE_IMAGE_ESCAPESIGN . $width;
-		$heighted = $widthed . SBWS_RESIZE_IMAGE_ESCAPESIGN . $height;
-		$qualitied = $heighted . SBWS_RESIZE_IMAGE_ESCAPESIGN . $quality;
+		$escaped = str_replace(BDWS_RESIZE_IMAGE_ESCAPESIGN, BDWS_RESIZE_IMAGE_ESCAPESIGN . BDWS_RESIZE_IMAGE_ESCAPESIGN, $normalized);
+		$masked = str_replace("/", BDWS_RESIZE_IMAGE_ESCAPESIGN, $escaped);
+		$widthed = $masked . BDWS_RESIZE_IMAGE_ESCAPESIGN . $width;
+		$heighted = $widthed . BDWS_RESIZE_IMAGE_ESCAPESIGN . $height;
+		$qualitied = $heighted . BDWS_RESIZE_IMAGE_ESCAPESIGN . $quality;
 		return $qualitied;
 	}
 	
@@ -50,7 +50,7 @@ class sbws_ImageUtils {
 	 * @return string timestamped cache entry file name
 	 */
 	function generate_timestamped_cache_filename($src, $width, $height, $quality, $timestamp) {
-		$timestamped = sbws_ImageUtils::generate_cache_filename($src, $width, $height, $quality) . SBWS_RESIZE_IMAGE_ESCAPESIGN . $timestamp;
+		$timestamped = BDWS_ImageUtils::generate_cache_filename($src, $width, $height, $quality) . BDWS_RESIZE_IMAGE_ESCAPESIGN . $timestamp;
 		return $timestamped;
 	}
 	
@@ -70,7 +70,7 @@ class sbws_ImageUtils {
 	 * @return string file type
 	 */
 	function get_type($file) {
-		list(, $type) = split("/", sbws_ImageUtils::get_mime_type($file));
+		list(, $type) = split("/", BDWS_ImageUtils::get_mime_type($file));
 		return $type;
 	}
 	
@@ -80,7 +80,7 @@ class sbws_ImageUtils {
 	 * @return string function name; preceeded with a dollar sign the corresponding function gets called
 	 */
 	function get_create_function_name($file) {
-		return "imagecreatefrom" . sbws_ImageUtils::get_type($file);
+		return "imagecreatefrom" . BDWS_ImageUtils::get_type($file);
 	}
 	
 	/**
@@ -89,7 +89,7 @@ class sbws_ImageUtils {
 	 * @return string function name; preceeded with a dollar sign the corresponding function gets called
 	 */
 	function get_send_function_name($file) {
-		return "image" . sbws_ImageUtils::get_type($file);
+		return "image" . BDWS_ImageUtils::get_type($file);
 	}
 	
 	/**
@@ -120,7 +120,7 @@ class sbws_ImageUtils {
 			$height = $image_info[1];
 		}
 		
-		$create_function_name = sbws_ImageUtils::get_create_function_name($file);
+		$create_function_name = BDWS_ImageUtils::get_create_function_name($file);
 		$original_image = $create_function_name($file);
 		$resized_image = imagecreatetruecolor($width, $height);
 		$white = imagecolorallocate($resized_image, 255, 255, 255);
@@ -155,10 +155,10 @@ class sbws_ImageUtils {
 	 * @param int value between 0 and 100 for jpeg; null for any other format
 	 */
 	function get_cached_file($src, $width, $height, $quality) {
-		$testfile = sbws_ImageUtils::generate_cache_filename($src, $width, $height, $quality);
+		$testfile = BDWS_ImageUtils::generate_cache_filename($src, $width, $height, $quality);
 		
 		$cached_file = null;
-		$dh = opendir(SBWS_CACHE_DIR);
+		$dh = opendir(BDWS_CACHE_DIR);
 		while(($file = readdir($dh)) !== false) {
 		    if(substr($file, 0, strlen($testfile)) == $testfile) {
 		    	$cached_file = $file;
@@ -166,7 +166,7 @@ class sbws_ImageUtils {
 		    }
 		}
 		closedir($dh);
-		return ($cached_file == null) ? null : SBWS_CACHE_DIR . "/" . $cached_file;
+		return ($cached_file == null) ? null : BDWS_CACHE_DIR . "/" . $cached_file;
 	}
 	
 	/**
@@ -177,7 +177,7 @@ class sbws_ImageUtils {
 	 * @param int value between 0 and 100 for jpeg; null for any other format
 	 */
 	function remove_cached_file($src, $width, $height, $quality) {
-		$cached_file = sbws_ImageUtils::get_cached_file($src, $width, $height, $quality);
+		$cached_file = BDWS_ImageUtils::get_cached_file($src, $width, $height, $quality);
 		if($cached_file) unlink($cached_file);
 	}
 	
@@ -187,7 +187,7 @@ class sbws_ImageUtils {
 	 * @return int last modified timestamp
 	 */
 	function get_mtime_from_cached_file($file) {
-		$parts = explode(SBWS_RESIZE_IMAGE_ESCAPESIGN, $file);
+		$parts = explode(BDWS_RESIZE_IMAGE_ESCAPESIGN, $file);
 		if(count($parts) > 1) return $parts[count($parts)-1];
 		else return null;
 	}
@@ -203,14 +203,16 @@ class sbws_ImageUtils {
 	 * @param boolean true if cache needs to be created / updated
 	 */
 	function cached_file_is_needed($src, $width, $height, $quality, $timestamp) {
-		$cached_file = sbws_ImageUtils::get_cached_file($src, $width, $height, $quality);
+		$cached_file = BDWS_ImageUtils::get_cached_file($src, $width, $height, $quality);
 		if(!$cached_file) return true;
 		
-		$cached_file_timestamp = sbws_ImageUtils::get_mtime_from_cached_file($cached_file);
+		$cached_file_timestamp = BDWS_ImageUtils::get_mtime_from_cached_file($cached_file);
 		if($cached_file_timestamp != $timestamp) return true;
 		
 		return false;
 	}
+
+	
 }
 
 ?>
