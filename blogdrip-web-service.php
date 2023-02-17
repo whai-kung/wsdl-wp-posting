@@ -7,6 +7,8 @@ Description: WordPress Web Service is used to access WordPress resources via API
 Version: 1.7.1
 Author: BlogDrip Content Marketing Platform
 Author URI: https://blogdrip.com/
+Requires at least: 7.4
+Requires PHP:      7.4
 */
 
 /*  Copyright 2021 BREMIC Digital Services (email: servicedesk@bremic.co.th)
