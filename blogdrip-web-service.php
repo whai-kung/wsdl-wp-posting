@@ -4,7 +4,7 @@
 Plugin Name: BlogDrip Web Service
 Plugin URI: https://blogdrip.com/
 Description: WordPress Web Service is used to access WordPress resources via APIs. After installation simply open https://yoursite.com/wp-json/bd/v1/version to test the plugin.
-Version: 1.7.1
+Version: 1.9
 Author: BlogDrip Content Marketing Platform
 Author URI: https://blogdrip.com/
 */
@@ -28,6 +28,45 @@ Author URI: https://blogdrip.com/
 /* Change Log
 release: 0.0.1
 Add feature `featureImage`
+
+release: 0.0.3
+Add feature `schedule publish`
+
+release: 0.0.4
+make its compatible with release 0.0.1
+
+release: 0.0.5
+Add feature to put yoast seo detail
+
+release: 1.0
+Add feature auto update plugin
+Move token to the setting page
+Add Readme
+
+release: 1.1
+Add allowed_protocols for feature chat so client can send skype:xxxx, viber:xxxx
+
+release: 1.2
+Add api to upload image and add param `attachmentId` for method `insertPost` to put attachmentId as feature image. 
+
+release: 1.3
+Add api to return current plug-in release version
+
+release: 1.4
+Add sell link
+
+release: 1.5
+Add api get all link
+
+release: 1.6
+Add api to submit and delete an article
+
+release: 1.7
+return exact url after post via api
+Rename plugin under setting
+
+release: 1.9
+bump version to rollback code base
 
 */
 
